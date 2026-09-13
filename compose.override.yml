@@ -1,0 +1,48 @@
+# Extra mounts for this agent. agent-mgr's template makes exactly one -- this
+# agent's home -- and names this file as where an instance adds its own.
+#
+# One line per skill, landing FLAT at /opt/data/skills/<name> (never nested
+# under a category, and never AT /opt/data/skills itself -- that path is
+# where `agent-mgr deploy` installs whatever skills.tsv names, and either
+# mistake shadows or gets shadowed by that install).
+#
+# ${AGENT_DIR}, never "./" -- agent-mgr passes its own templates/compose.yml
+# as the FIRST -f, and Compose resolves relative bind paths against that
+# file's directory, so "./" here would mount agent-mgr's own templates.
+#
+# This is a NESTED bind (/opt/data is already the home bind from agent-mgr's
+# template): if the target mountpoint does not exist yet, the Docker daemon
+# creates it inside the parent bind's SOURCE, on the host, as root:root --
+# even though the parent `skills/` dir itself is not root-owned. That leaves
+# a directory `agent-mgr deploy` cannot write into. The fix is to create the
+# leaf as this user BEFORE the first `up`:
+#
+#   mkdir -p ~/.hermes-hermes-scaffold/skills/receiptsnap
+#
+# (already done once for this agent -- repeat it for any new sibling skill
+# added the same way, or after a fresh `agent-mgr deploy` on a new home).
+#
+# Read-only: the agent runs this skill, it does not edit it.
+#
+# `build`/`image`/`pull_policy` below are the derived-image recipe from
+# agent-mgr's HOWTO ("Where does my code go?"): AGENT_IMAGE in agent.env
+# names the SAME tag built here, so agent-mgr inspects the image it actually
+# built rather than a registry tag Compose might otherwise pull over it.
+# `pull_policy: never` is load-bearing -- its absence is what `resolve-guard`
+# refuses to run against. Build once with `agent-mgr compose hermes-scaffold
+# build`, THEN `agent-mgr up hermes-scaffold` -- `up` does not build.
+#
+# AGENT_ID is the Agent Index identity the agent-index service (added by
+# this repo's Dockerfile) registers and reports under. Not a secret --
+# PLOW_AGENT_TOKEN stays out of compose entirely and is read by that service
+# straight from $AGENT_HOME/.env, matching agent-mgr's own credential rule.
+services:
+  hermes:
+    build:
+      context: ${AGENT_DIR:?set by agent-mgr from the registry}
+    image: ${AGENT_IMAGE:?set in agent.env}
+    pull_policy: never
+    environment:
+      AGENT_ID: receiptsnap
+    volumes:
+      - ${AGENT_DIR:?set by agent-mgr from the registry}/receiptsnap:/opt/data/skills/receiptsnap:ro
