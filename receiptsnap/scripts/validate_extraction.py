@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic gate between the LLM's receipt extraction and the sheet
+"""Deterministic gate between the LLM's receipt extraction and the ledger
 write. The model reads the photo; this script is the one thing that decides
 whether what it read is well-formed enough to become a row. An unrecognized
 category is coerced to "other" rather than rejected -- merchants are not a

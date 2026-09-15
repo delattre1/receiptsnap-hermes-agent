@@ -1,4 +1,4 @@
 {
-  "sheet_url": "[SHEET_URL]",
+  "ledger_path": "~/Plow/receiptsnap/receipts.csv",
   "categories": ["groceries", "dining", "transport", "shopping", "other"]
 }

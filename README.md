@@ -3,8 +3,8 @@
 A [Hermes](https://howto.plow.co/hermes) agent, run via
 [`agent-mgr`](https://github.com/plow-pbc/agent-mgr): photograph a receipt,
 text it to the agent's Plow Chat line, and it logs the merchant, total,
-date and category into your Google Sheet — confirmed with a screenshot of
-the new row.
+date and category into a CSV ledger on your own Mac — no Google account,
+no browser, nothing to configure beyond Plow Latch itself.
 
 ## What it does
 
@@ -12,13 +12,13 @@ the new row.
    agent's own phone line.
 2. The agent reads the photo directly with its own vision — no external
    OCR call — and extracts merchant, total, date, and category.
-3. It drives your own browser (already signed into your Google account)
-   through [Plow Latch](https://plow.co/latch) to open your configured
-   Google Sheet and append one row.
-4. It replies with a one-line confirmation and a screenshot of the sheet
-   showing the new row, so you can see the numbers actually landed.
+3. It appends one row to `~/Plow/receiptsnap/receipts.csv` on your Mac,
+   through [Plow Latch](https://plow.co/latch)'s file tools — the file is
+   created automatically the first time.
+4. It replies with a one-line confirmation and sends the updated ledger
+   file back, so you can see the row actually landed.
 5. Ask it a free-form question later — "how much did I spend on groceries
-   this month?" — and it rereads the same sheet to answer.
+   this month?" — and it rereads the same file to answer.
 
 See [`receiptsnap/SKILL.md`](receiptsnap/SKILL.md) for the exact flow.
 
@@ -26,13 +26,13 @@ See [`receiptsnap/SKILL.md`](receiptsnap/SKILL.md) for the exact flow.
 
 - **Reads**: photo attachments sent to its own Plow Chat line. Nothing
   else on your phone or Mac.
-- **Browser access is scoped to `docs.google.com` only**, enforced by
-  Plow Latch's own origin allowlist — checked in code before every
-  navigation, not just an instruction in the skill's prompt. If anything
-  ever tried to navigate outside that scope, the page locks until it goes
-  back in scope.
-- It never touches any page other than the one Google Sheet named in its
-  config — no checkout, no payment page, no other tab.
+- **Touches exactly one file** on your Mac —
+  `~/Plow/receiptsnap/receipts.csv` (or wherever `receiptsnap/config.json`'s
+  `ledger_path` points) — through Plow Latch's `plow_read_file` /
+  `plow_write_file`. Nothing else on disk, no browser, no other app.
+- Paths under `~/Plow` — the shared folder Plow Latch already creates —
+  auto-approve on every read/write; that's why the ledger lives there
+  rather than somewhere that would pop an approval dialog on every receipt.
 - It reports its own token usage to the
   [Agent Index](https://aiworthusing.com/agent-index/receiptsnap) every 5
   minutes (day + model + token counts only — never prompts, costs, or file
@@ -49,9 +49,10 @@ git clone https://github.com/ryanmiura/receiptsnap-hermes-agent.git
 agent-mgr register receiptsnap ./receiptsnap-hermes-agent
 agent-mgr deploy receiptsnap
 
-# Point the skill at your own sheet before the first run:
-#   edit receiptsnap-hermes-agent/receiptsnap/config.json,
-#   replacing "sheet_url": "[SHEET_URL]" with your Google Sheet's URL.
+# Nothing to configure before the first run: receiptsnap/config.json's
+# default ledger_path (~/Plow/receiptsnap/receipts.csv) just works as long
+# as Plow Latch is installed. Change it only if you want the ledger
+# somewhere else.
 
 agent-mgr compose receiptsnap build   # builds the derived image (adds the
                                       # Agent Index usage reporter)
