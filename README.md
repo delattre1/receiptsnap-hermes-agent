@@ -15,8 +15,11 @@ no browser, nothing to configure beyond Plow Latch itself.
 3. It appends one row to `~/Plow/receiptsnap/receipts.csv` on your Mac,
    through [Plow Latch](https://plow.co/latch)'s file tools — the file is
    created automatically the first time.
-4. It replies with a one-line confirmation and sends the updated ledger
-   file back, so you can see the row actually landed.
+4. It replies with a one-line confirmation quoting the row it just read
+   back from the file — merchant, total, date, category — not the raw
+   extraction, so the confirmation can't drift from what actually landed
+   on disk. Open `~/Plow/receiptsnap/receipts.csv` yourself (Numbers,
+   Excel, `cat`) any time to see the whole ledger.
 5. Ask it a free-form question later — "how much did I spend on groceries
    this month?" — and it rereads the same file to answer.
 

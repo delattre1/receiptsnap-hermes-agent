@@ -6,9 +6,9 @@ description: Log a photographed receipt into a local CSV ledger on the owner's M
 # ReceiptSnap
 
 Turn a photographed receipt sent to this agent's own Plow Chat line into one
-new row in a CSV ledger on the owner's own Mac, confirmed by sending the
-updated file back, and answer free-form spending questions by rereading
-that same file.
+new row in a CSV ledger on the owner's own Mac, confirmed by reading the
+row back and quoting it, and answer free-form spending questions by
+rereading that same file.
 
 No Google account, no browser, no URL to configure — the only setup this
 skill needs is Plow Latch itself (already required for every ReceiptSnap
@@ -109,21 +109,13 @@ you cannot read rather than inventing a value.
 
 ## Confirm
 
-Reply in the Plow Chat thread this photo arrived in:
-
-- One line confirming what was logged: merchant, total, date, category.
-- Send the ledger file back as an attachment (the platform's
-  `send_document`, file name `receipts.csv`) — the same "did this really
-  happen" signal a screenshot would give, and hard to fake because the row
-  you just quoted must be the last line of the file you attached. Write the
-  content from step 4's read to a temp path inside this container first
-  (`plow_write_file` only writes to the OWNER'S Mac, not here) — the file
-  tool for that is separate from Latch's.
+Reply in the Plow Chat thread this photo arrived in with one line
+confirming what was logged: merchant, total, date, category — the same
+values step 4 just read back from the file, not the raw extraction, so the
+confirmation can't drift from what actually landed on disk.
 
 ## Answer free-form spending questions
 
 On a question like "quanto gastei em mercado esse mês?": `plow_read_file`
 the ledger (no write), parse the CSV yourself, filter/sum the rows that
 match (category, this-month date range), answer directly with the number.
-No need to attach the file back for a read-only question — that's for
-writes, where the owner is watching for proof of a change.
