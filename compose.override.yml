@@ -46,3 +46,13 @@ services:
       AGENT_ID: receiptsnap
     volumes:
       - ${AGENT_DIR:?set by agent-mgr from the registry}/receiptsnap:/opt/data/skills/receiptsnap:ro
+      # Overlays the image's default persona with the same text plus one
+      # addition: check skills before describing an unprompted attachment in
+      # prose. Without this, an incoming receipt photo with no caption gets
+      # narrated back conversationally instead of routed to receiptsnap --
+      # observed live, twice, against the real Plow Chat line before this
+      # was added. Read-only so a turn cannot edit the routing rule away.
+      # The host file already exists (the gateway wrote it at first boot),
+      # so this is a plain file overlay, not the nested-bind-creates-a-
+      # root-owned-mountpoint case the skills volume above has to avoid.
+      - ${AGENT_DIR:?set by agent-mgr from the registry}/runtime/SOUL.md:/opt/data/SOUL.md:ro
