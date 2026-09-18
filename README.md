@@ -1,7 +1,6 @@
 # ReceiptSnap
 
-A [Hermes](https://howto.plow.co/hermes) agent, run via
-[`agent-mgr`](https://github.com/plow-pbc/agent-mgr): photograph a receipt,
+A [Hermes](https://howto.plow.co/hermes) agent for Plow: photograph a receipt,
 text it to the agent's Plow Chat line, and it logs the merchant, total,
 date and category into a CSV ledger on your own Mac — no Google account,
 no browser, nothing to configure beyond Plow Latch itself.
@@ -41,40 +40,23 @@ See [`receiptsnap/SKILL.md`](receiptsnap/SKILL.md) for the exact flow.
   minutes (day + model + token counts only — never prompts, costs, or file
   paths).
 
-## Bring it up
+## Install
 
-Prerequisites: `docker`, `python3` (3.11+), an authenticated `gh`, and
-[`agent-mgr`](https://github.com/plow-pbc/agent-mgr) installed
-(`agent-mgr ls` should run).
+The simplest path is **Deploy this agent** on the
+[ReceiptSnap Agent Index page](https://aiworthusing.com/agent-index/receiptsnap).
+Install Plow Latch on the Mac and sign in to the same Plow account; ReceiptSnap
+creates `~/Plow/receiptsnap/receipts.csv` automatically on first use.
+
+To run the image from source, install Docker, Python 3.11+, and
+[`plow-agents`](https://github.com/plow-pbc/plow-agents), then:
 
 ```sh
 git clone https://github.com/ryanmiura/receiptsnap-hermes-agent.git
-agent-mgr register receiptsnap ./receiptsnap-hermes-agent
-agent-mgr deploy receiptsnap
-
-# Nothing to configure before the first run: receiptsnap/config.json's
-# default ledger_path (~/Plow/receiptsnap/receipts.csv) just works as long
-# as Plow Latch is installed. Change it only if you want the ledger
-# somewhere else.
-
-agent-mgr compose receiptsnap build   # builds the derived image (adds the
-                                      # Agent Index usage reporter)
-agent-mgr activate receiptsnap        # texts a one-time code to your phone
-agent-mgr up receiptsnap
-agent-mgr sign-in receiptsnap         # device-code OAuth in your browser
-
-# Pair it to a Mac running Plow Latch: in Latch, Agents pane -> MCP clients
-# -> Connect MCP client -> "Can't use OAuth? Create a static credential" ->
-# copy the JSON it shows once, then:
-agent-mgr set-latch receiptsnap
-agent-mgr check-latch receiptsnap     # expect "latch reachable ... (HTTP 200)"
-```
-
-Smoke test:
-
-```sh
-agent-mgr agent receiptsnap "hello, who are you?"
-agent-mgr check-connectors receiptsnap
+cd receiptsnap-hermes-agent
+plow-agents login
+plow-agents lines
+plow-agents deploy --local --line <FREE_LINE_ID>
+docker compose logs -f
 ```
 
 Then text a photo of a receipt to the agent's Plow Chat line.

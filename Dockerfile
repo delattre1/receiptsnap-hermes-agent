@@ -1,35 +1,19 @@
-# Derived image for the Hermes Hackathon's Agent Index requirement: adds the
-# usage reporter as a supervised service, on top of agent-mgr's own pinned
-# local base -- otherwise unmodified. Built and run entirely locally via
-# agent-mgr (see compose.override.yml); NOT the cloud-fleet Dockerfile
-# pattern plow-pbc/life-assistant-hermes-agent uses for its own exe.dev VM
-# deployment -- that targets a different image lineage
-# (public.ecr.aws/.../plow-cloud-agents) with different conventions
-# (HERMES_HOME=/var/lib/hermes, a fixed uid 10000). This one was built and
-# verified against THIS repo's actual local base.
-#
-# BASE tracks agent.env's AGENT_IMAGE... in reverse: agent.env names the tag
-# THIS Dockerfile produces (per agent-mgr's HOWTO "Where does my code go?"),
-# so BASE's default here is the one place the upstream pin actually lives.
-# Rebump: `agent-mgr resolve hermes-scaffold` after a stack.json bump, then
-# update the default below and rebuild.
-ARG BASE=nousresearch/hermes-agent@sha256:8f4e8677281eca188bc9d2fda90806646ba19941fce55fa8fda2d63112ff48a8
-FROM ${BASE}
+# ReceiptSnap variant for Plow Cloud and plow-agents local runs.
+# Keep the base immutable: a release must be reviewed before this pin moves.
+FROM public.ecr.aws/e1h7x4a2/plow-cloud-agents:base-42cb36ed16f513e9c7461b3f355acec181c8a26d@sha256:7bb771761c075ef3736c4cc7bdc48402ce325ed35b5efb529b1b31ec7956fd40
 
-COPY LICENSE /usr/share/doc/hermes-scaffold/LICENSE
+# plow-init combines the base identity with this agent-specific routing rule.
+COPY --chmod=0644 runtime/persona.md /opt/hermes/plow-seed/persona.md
+COPY LICENSE /usr/share/doc/receiptsnap/LICENSE
 
-# The usage reporter, fetched at build from the commit vendor/client.pin
-# names and checked against the hash beside it. Fetched rather than
-# committed because plow-pbc/agent-index-client owns that file and is
-# public; pinned rather than tracked from a branch because this runs inside
-# an agent holding a live credential, and a moving reference would
-# substitute unreviewed code under it.
-#
-# Root-owned under /opt/plow, outside every skill and outside $HERMES_HOME:
-# everything under the mounted home is agent-writable, and scheduling a
-# script living there would turn one prompt-injected turn that rewrites it
-# into code the supervisor runs unattended, forever, holding this agent's
-# chat credential.
+# Skills live outside the writable home. The base reconciles them into each
+# tenant's /var/lib/hermes/skills directory during boot.
+COPY receiptsnap/ /opt/hermes/skills/receiptsnap/
+RUN find /opt/hermes/skills/receiptsnap -type d -exec chmod 0755 {} + \
+ && find /opt/hermes/skills/receiptsnap -type f ! -perm -u+x -exec chmod 0644 {} + \
+ && find /opt/hermes/skills/receiptsnap -type f -perm -u+x -exec chmod 0755 {} +
+
+# Agent Index usage reporter, pinned and checksum-verified at build time.
 COPY vendor/client.pin /opt/plow/agent-index-client.pin
 RUN set -eu; \
     sha="$(sed -n 's/^sha=//p' /opt/plow/agent-index-client.pin)"; \
@@ -39,12 +23,6 @@ RUN set -eu; \
       "https://raw.githubusercontent.com/plow-pbc/agent-index-client/${sha}/${path}"; \
     got="$(sha256sum /opt/plow/agent-index-client.py | cut -d' ' -f1)"; \
     [ "$got" = "$want" ] || { echo "agent-index client is $got, pin says $want" >&2; exit 1; }; \
-    chown root:root /opt/plow/agent-index-client.pin /opt/plow/agent-index-client.py; \
     chmod 0644 /opt/plow/agent-index-client.py
 
-# The reporter's schedule, as a supervised service beside the gateway,
-# registered into the base image's own (empty) user2 extension bundle rather
-# than its user bundle -- so a future base rebuild that adds services of its
-# own cannot collide with this repo's registration of them.
 COPY image/s6-overlay/ /etc/s6-overlay/
-RUN chmod 0755 /etc/s6-overlay/s6-rc.d/agent-index/run

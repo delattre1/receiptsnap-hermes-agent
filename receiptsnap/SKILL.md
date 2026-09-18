@@ -29,8 +29,7 @@ owner's own inbound texts), and this agent does not need it.
 
 ## Config
 
-Read `receiptsnap/config.json` (mounted at
-`/opt/data/skills/receiptsnap/config.json`) before writing anything. It has:
+Read `/opt/hermes/skills/receiptsnap/config.json` before writing anything. It has:
 
 ```json
 {
@@ -78,7 +77,7 @@ row** — reply asking for a clearer photo instead.
 
 Then validate deterministically before touching the ledger:
 
-    /opt/data/skills/receiptsnap/scripts/validate_extraction.py '<json above>'
+    /opt/hermes/skills/receiptsnap/scripts/validate_extraction.py '<json above>'
 
 Exit code 0 means the JSON is well-formed, `total` parses as a positive
 number, `date` is a real calendar date, and `category` is one of
